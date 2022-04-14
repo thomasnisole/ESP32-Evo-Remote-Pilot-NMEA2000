@@ -91,8 +91,6 @@ void setup() {
   digitalWrite(PILOT_NOT_FOUNDED_PIN, HIGH);
   digitalWrite(MESSAGE_SENDET_PIN, HIGH);
 
-  delay(500);
-
   digitalWrite(PILOT_NOT_FOUNDED_PIN, LOW);
   digitalWrite(MESSAGE_SENDET_PIN, LOW);
 
@@ -284,7 +282,6 @@ void Handle_AP_Remote(void) {
 
 void messageSent() {
   digitalWrite(MESSAGE_SENDET_PIN, HIGH);
-  delay(1000);
   digitalWrite(MESSAGE_SENDET_PIN, LOW);
 }
 

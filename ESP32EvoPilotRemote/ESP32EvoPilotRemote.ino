@@ -21,9 +21,6 @@
 #define ESP32_CAN_TX_PIN GPIO_NUM_5  // Set CAN TX port to 5 
 #define ESP32_CAN_RX_PIN GPIO_NUM_4  // Set CAN RX port to 4
 
-#define PILOT_NOT_FOUNDED_PIN GPIO_NUM_26
-#define MESSAGE_SENDET_PIN GPIO_NUM_25
-
 #include <Arduino.h>
 #include <WiFi.h>
 #include <Preferences.h>
@@ -84,15 +81,6 @@ void setup() {
 
   esp_efuse_mac_get_default(chipid);
   for (i = 0; i < 6; i++) id += (chipid[i] << (7 * i));
-
-  pinMode(PILOT_NOT_FOUNDED_PIN, OUTPUT);
-  pinMode(MESSAGE_SENDET_PIN, OUTPUT);
-
-  digitalWrite(PILOT_NOT_FOUNDED_PIN, HIGH);
-  digitalWrite(MESSAGE_SENDET_PIN, HIGH);
-
-  digitalWrite(PILOT_NOT_FOUNDED_PIN, LOW);
-  digitalWrite(MESSAGE_SENDET_PIN, LOW);
 
   // Reserve enough buffer for sending all messages. This does not work on small memory devices like Uno or Mega
   NMEA2000.SetN2kCANReceiveFrameBufSize(150);
@@ -169,23 +157,12 @@ void BeepOff() {
 // Get device source address (of EV-1)
 
 int getDeviceSourceAddress(String model) {
-  if (!pN2kDeviceList->ReadResetIsListUpdated()) {
-    Serial.println("not ReadResetIsListUpdated");
-    return -1;
-  }
-    Serial.println("ReadResetIsListUpdated");
+  if (!pN2kDeviceList->ReadResetIsListUpdated()) return -1;
   for (uint8_t i = 0; i < N2kMaxBusDevices; i++) {
     const tNMEA2000::tDevice *device = pN2kDeviceList->FindDeviceBySource(i);
-    if ( device == 0 ) {
-      Serial.println("continue");
-      continue;
-    }
+    if ( device == 0 ) continue;
 
     String modelVersion = device->GetModelVersion();
-    Serial.print("Source : ");
-    Serial.print(i);
-    Serial.print(", ");
-    Serial.println(modelVersion);
 
     if (modelVersion.indexOf(model) >= 0) {
       return device->GetSource();
@@ -201,12 +178,6 @@ void Handle_AP_Remote(void) {
 
   if (pilotSourceAddress < 0) pilotSourceAddress = getDeviceSourceAddress("EV-1"); // Try to get EV-1 Source Address
 
-  if (pilotSourceAddress < 0) {
-    digitalWrite(PILOT_NOT_FOUNDED_PIN, HIGH);
-  } else {
-    digitalWrite(PILOT_NOT_FOUNDED_PIN, LOW);
-  }
-
   if (mySwitch.available()) {
     key = mySwitch.getReceivedValue();
     mySwitch.resetAvailable();
@@ -214,7 +185,6 @@ void Handle_AP_Remote(void) {
 
   if (key > 0 && millis() > key_time + KEY_DELAY) {
     key_time = millis();   // Remember time of last key received
-    Serial.println(key);
 
     if (key == Key_Standby) {
       Serial.println("Setting PILOT_MODE_STANDBY");
@@ -223,7 +193,6 @@ void Handle_AP_Remote(void) {
       tN2kMsg N2kMsg;
       RaymarinePilot::SetEvoPilotMode(N2kMsg, pilotSourceAddress, PILOT_MODE_STANDBY);
       NMEA2000.SendMsg(N2kMsg);
-      messageSent();
     }
 
     else if (key == Key_Auto) {
@@ -233,7 +202,6 @@ void Handle_AP_Remote(void) {
       tN2kMsg N2kMsg;
       RaymarinePilot::SetEvoPilotMode(N2kMsg, pilotSourceAddress, PILOT_MODE_AUTO);
       NMEA2000.SendMsg(N2kMsg);
-      messageSent();
     }
 
     else if (key == Key_Plus_1) {
@@ -242,8 +210,7 @@ void Handle_AP_Remote(void) {
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
       tN2kMsg N2kMsg;
       RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_PLUS_1);
-      NMEA2000.SendMsg(N2kMsg); 
-      messageSent();     
+      NMEA2000.SendMsg(N2kMsg);
     }
 
     else if (key == Key_Plus_10) {
@@ -252,18 +219,16 @@ void Handle_AP_Remote(void) {
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
       tN2kMsg N2kMsg;
       RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_PLUS_10);
-      NMEA2000.SendMsg(N2kMsg);   
-      messageSent();   
+      NMEA2000.SendMsg(N2kMsg);
     }
-
+    
     else if (key == Key_Minus_1) {
       Serial.println("-1");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
       tN2kMsg N2kMsg;
       RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_MINUS_1);
-      NMEA2000.SendMsg(N2kMsg);    
-      messageSent();  
+      NMEA2000.SendMsg(N2kMsg);
     }
 
     else if (key == Key_Minus_10) {
@@ -272,19 +237,11 @@ void Handle_AP_Remote(void) {
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
       tN2kMsg N2kMsg;
       RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_MINUS_10);
-      NMEA2000.SendMsg(N2kMsg);   
-      messageSent();   
+      NMEA2000.SendMsg(N2kMsg);
     }
   }
   BeepOff();
-  key = 0;
 }
-
-void messageSent() {
-  digitalWrite(MESSAGE_SENDET_PIN, HIGH);
-  digitalWrite(MESSAGE_SENDET_PIN, LOW);
-}
-
 
 void loop() {
   Handle_AP_Remote();

@@ -41,7 +41,6 @@
 #define PARENTS 0
 #define THOMAS 1
 #define GALIENNE 0
-
 int NodeAddress;  // To store last Node Address
 
 Preferences preferences;             // Nonvolatile storage on ESP32 - To store LastDeviceAddress
@@ -53,26 +52,56 @@ unsigned long beep_time = 0;
 bool beep_status = false;
 
 #ifdef PARENT
-const unsigned long Key_Minus_1 = 8298284;
-const unsigned long Key_Plus_1 = 8298274;
-const unsigned long Key_Minus_10 = 8298282;
-const unsigned long Key_Plus_10 = 8298278;
-const unsigned long Key_Auto = 8298276;
-const unsigned long Key_Standby = 8298280;
+const unsigned long Remote1_Key_Minus_1 = 8298284;
+const unsigned long Remote1_Key_Plus_1 = 8298274;
+const unsigned long Remote1_Key_Minus_10 = 8298282;
+const unsigned long Remote1_Key_Plus_10 = 8298278;
+const unsigned long Remote1_Key_Auto = 8298276;
+const unsigned long Remote1_Key_Standby = 8298280;
+const unsigned long Remote1_Key_Tack_PortSide= 1234; // Babord
+const unsigned long Remote1_Key_Tack_Starboard= 1234; // Tribord
+const unsigned long Remote2_Key_Minus_1 = 1913964;
+const unsigned long Remote2_Key_Plus_1 = 1913954;
+const unsigned long Remote2_Key_Minus_10 = 1913962;
+const unsigned long Remote2_Key_Plus_10 = 1913958;
+const unsigned long Remote2_Key_Auto = 1913956;
+const unsigned long Remote2_Key_Standby = 1913960;
+const unsigned long Remote2_Key_Tack_PortSide= 1913966; // Babord
+const unsigned long Remote2_Key_Tack_Starboard= 1913953; // Tribord
 #elif THOMAS
-const unsigned long Key_Minus_1 = 12240684;
-const unsigned long Key_Plus_1 = 12240674;
-const unsigned long Key_Minus_10 = 12240682;
-const unsigned long Key_Plus_10 = 12240678;
-const unsigned long Key_Auto = 12240676;
-const unsigned long Key_Standby = 12240680;
+const unsigned long Remote1_Key_Minus_1 = 12240684;
+const unsigned long Remote1_Key_Plus_1 = 12240674;
+const unsigned long Remote1_Key_Minus_10 = 12240682;
+const unsigned long Remote1_Key_Plus_10 = 12240678;
+const unsigned long Remote1_Key_Auto = 12240676;
+const unsigned long Remote1_Key_Standby = 12240680;
+const unsigned long Remote1_Key_Tack_PortSide= 12240686; // Babord
+const unsigned long Remote1_Key_Tack_Starboard= 12240673; // Tribord
+const unsigned long Remote2_Key_Minus_1 = 9178220;
+const unsigned long Remote2_Key_Plus_1 = 9178210;
+const unsigned long Remote2_Key_Minus_10 = 9178218;
+const unsigned long Remote2_Key_Plus_10 = 9178214;
+const unsigned long Remote2_Key_Auto = 9178212;
+const unsigned long Remote2_Key_Standby = 9178216;
+const unsigned long Remote2_Key_Tack_PortSide= 9178222; // Babord
+const unsigned long Remote2_Key_Tack_Starboard= 9178209; // Tribord
 #elif GALIENNE
-const unsigned long Key_Minus_1 = 8949036;
-const unsigned long Key_Plus_1 = 8949026;
-const unsigned long Key_Minus_10 = 8949034;
-const unsigned long Key_Plus_10 = 8949030;
-const unsigned long Key_Auto = 8949028;
-const unsigned long Key_Standby = 8949032;
+const unsigned long Remote1_Key_Minus_1 = 8949036;
+const unsigned long Remote1_Key_Plus_1 = 8949026;
+const unsigned long Remote1_Key_Minus_10 = 8949034;
+const unsigned long Remote1_Key_Plus_10 = 8949030;
+const unsigned long Remote1_Key_Auto = 8949028;
+const unsigned long Remote1_Key_Standby = 8949032;
+const unsigned long Remote1_Key_Tack_PortSide= 8949038; // Babord
+const unsigned long Remote1_Key_Tack_Starboard= 8949025; // Tribord
+const unsigned long Remote2_Key_Minus_1 = 7483500;
+const unsigned long Remote2_Key_Plus_1 = 7483490;
+const unsigned long Remote2_Key_Minus_10 = 7483498;
+const unsigned long Remote2_Key_Plus_10 = 7483494;
+const unsigned long Remote2_Key_Auto = 7483492;
+const unsigned long Remote2_Key_Standby = 7483496;
+const unsigned long Remote2_Key_Tack_PortSide= 7483502; // Babord
+const unsigned long Remote2_Key_Tack_Starboard= 7483489; // Tribord
 #endif
 
 const unsigned long TransmitMessages[] PROGMEM = {126208UL,   // Set Pilot Mode
@@ -128,9 +157,9 @@ void setup() {
   mySwitch.enableReceive(ESP32_RCSWITCH_PIN);  // Receiver on GPIO15 on ESP32
 
   // Uncomment 3 rows below to see, what device will send to bus
-  //NMEA2000.SetForwardStream(&Serial);  // PC output on due programming port
-  //NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
-  //NMEA2000.SetForwardOwnMessages();
+  // NMEA2000.SetForwardStream(&Serial);  // PC output on due programming port
+  // NMEA2000.SetForwardType(tNMEA2000::fwdt_Text); // Show in clear text. Leave uncommented for default Actisense format.
+  // NMEA2000.SetForwardOwnMessages();
 
   preferences.begin("nvs", false);                          // Open nonvolatile storage (nvs)
   NodeAddress = preferences.getInt("LastNodeAddress", 34);  // Read stored last NodeAddress, default 34
@@ -205,8 +234,9 @@ void Handle_AP_Remote(void) {
 
   if (key > 0 && millis() > key_time + KEY_DELAY) {
     key_time = millis();   // Remember time of last key received
+    // Serial.println(key);
 
-    if (key == Key_Standby) {
+    if (key == Remote1_Key_Standby || key == Remote2_Key_Standby) {
       Serial.println("Setting PILOT_MODE_STANDBY");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
@@ -215,7 +245,7 @@ void Handle_AP_Remote(void) {
       NMEA2000.SendMsg(N2kMsg);
     }
 
-    else if (key == Key_Auto) {
+    else if (key == Remote1_Key_Auto || key == Remote2_Key_Auto) {
       Serial.println("Setting PILOT_MODE_AUTO");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
@@ -224,7 +254,7 @@ void Handle_AP_Remote(void) {
       NMEA2000.SendMsg(N2kMsg);
     }
 
-    else if (key == Key_Plus_1) {
+    else if (key == Remote1_Key_Plus_1 || key == Remote2_Key_Plus_1) {
       Serial.println("+1");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
@@ -233,7 +263,7 @@ void Handle_AP_Remote(void) {
       NMEA2000.SendMsg(N2kMsg);
     }
 
-    else if (key == Key_Plus_10) {
+    else if (key == Remote1_Key_Plus_10 || key == Remote2_Key_Plus_10) {
       Serial.println("+10");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
@@ -242,7 +272,7 @@ void Handle_AP_Remote(void) {
       NMEA2000.SendMsg(N2kMsg);
     }
     
-    else if (key == Key_Minus_1) {
+    else if (key == Remote1_Key_Minus_1 || key == Remote2_Key_Minus_1) {
       Serial.println("-1");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
@@ -251,12 +281,30 @@ void Handle_AP_Remote(void) {
       NMEA2000.SendMsg(N2kMsg);
     }
 
-    else if (key == Key_Minus_10) {
+    else if (key == Remote1_Key_Minus_10 || key == Remote2_Key_Minus_10) {
       Serial.println("-10");
       BeepOn();
       if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
       tN2kMsg N2kMsg;
       RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_MINUS_10);
+      NMEA2000.SendMsg(N2kMsg);
+    }
+
+    else if (key == Remote1_Key_Tack_PortSide || key == Remote2_Key_Tack_PortSide) {
+      Serial.println("Tack Port Side");
+      BeepOn();
+      if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
+      tN2kMsg N2kMsg;
+      RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_TACK_PORTSIDE);
+      NMEA2000.SendMsg(N2kMsg);
+    }
+
+    else if (key == Remote1_Key_Tack_Starboard || key == Remote2_Key_Tack_Starboard) {
+      Serial.println("Tack Starboard");
+      BeepOn();
+      if (pilotSourceAddress < 0) return; // No EV-1 detected. Return!
+      tN2kMsg N2kMsg;
+      RaymarinePilot::KeyCommand(N2kMsg, pilotSourceAddress, KEY_TACK_STARBORD);
       NMEA2000.SendMsg(N2kMsg);
     }
   }

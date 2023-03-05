@@ -38,6 +38,10 @@
 
 #define BUZZER_PIN 2  // Buzzer connected to GPIO 2
 
+#define PARENTS 0
+#define THOMAS 1
+#define GALIENNE 0
+
 int NodeAddress;  // To store last Node Address
 
 Preferences preferences;             // Nonvolatile storage on ESP32 - To store LastDeviceAddress
@@ -48,12 +52,28 @@ unsigned long key_time = 0;
 unsigned long beep_time = 0;
 bool beep_status = false;
 
-const unsigned long Key_Minus_1 = 8298284; // Change values to individual values programmed to remote control
+#ifdef PARENT
+const unsigned long Key_Minus_1 = 8298284;
 const unsigned long Key_Plus_1 = 8298274;
 const unsigned long Key_Minus_10 = 8298282;
 const unsigned long Key_Plus_10 = 8298278;
 const unsigned long Key_Auto = 8298276;
 const unsigned long Key_Standby = 8298280;
+#elif THOMAS
+const unsigned long Key_Minus_1 = 12240684;
+const unsigned long Key_Plus_1 = 12240674;
+const unsigned long Key_Minus_10 = 12240682;
+const unsigned long Key_Plus_10 = 12240678;
+const unsigned long Key_Auto = 12240676;
+const unsigned long Key_Standby = 12240680;
+#elif GALIENNE
+const unsigned long Key_Minus_1 = 8949036;
+const unsigned long Key_Plus_1 = 8949026;
+const unsigned long Key_Minus_10 = 8949034;
+const unsigned long Key_Plus_10 = 8949030;
+const unsigned long Key_Auto = 8949028;
+const unsigned long Key_Standby = 8949032;
+#endif
 
 const unsigned long TransmitMessages[] PROGMEM = {126208UL,   // Set Pilot Mode
                                                   126720UL,   // Send Key Command
